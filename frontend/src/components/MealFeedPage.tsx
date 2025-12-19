@@ -7,120 +7,67 @@ import {
   RefreshCw,
   Calendar,
   ShoppingCart,
+  Info,
+  CheckCircle,
+  Heart,
+  ThumbsUp,
+  ThumbsDown,
+  Zap,
+  Beef,
+  Wheat,
+  Droplets,
 } from "lucide-react";
 import type { Meal } from "../types/meal";
 import api from "../api/axios";
+import type { UserProfile } from "../types/user";
 
-/* ---------- PROPS ---------- */
 type MealFeedPageProps = {
+  userProfile: UserProfile;
   onNavigate: (page: "planner" | "grocery") => void;
 };
 
-/* ---------- ALTERNATIVES ---------- */
-const alternativeIngredients: Record<string, string[]> = {
-  eggs: ["silken tofu", "flax eggs", "chia eggs"],
-  spinach: ["kale", "arugula", "swiss chard"],
-  mushroom: ["zucchini", "eggplant", "bell peppers"],
-  "bell pepper": ["cherry tomatoes", "zucchini", "carrots"],
-  salmon: ["cod", "halibut", "tilapia"],
-  chicken: ["turkey", "tofu", "tempeh"],
-  quinoa: ["brown rice", "farro", "bulgur"],
-  broccoli: ["green beans", "asparagus", "brussels sprouts"],
-};
-
-export function MealFeedPage({ onNavigate }: MealFeedPageProps) {
-  /* ---------- STATE ---------- */
+export function MealFeedPage({ userProfile, onNavigate }: MealFeedPageProps) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedIngredient, setSelectedIngredient] = useState<string | null>(null);
-  const [servings, setServings] = useState(2);
-  const [adding, setAdding] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
-  /* ---------- FETCH ALL MEALS ---------- */
   useEffect(() => {
     api
       .get("/api/meals")
       .then((res) => setMeals(res.data))
-      .catch((err) => console.error("Failed to fetch meals", err))
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  /* ---------- HELPERS ---------- */
-  const getIngredientKey = (ingredient: string) => {
-    const lower = ingredient.toLowerCase();
-    return Object.keys(alternativeIngredients).find((key) =>
-      lower.includes(key)
-    );
-  };
-
-  const getAlternatives = (ingredient: string) => {
-    const key = getIngredientKey(ingredient);
-    return key ? alternativeIngredients[key] : [];
-  };
-
-  const scaled = (value: number) =>
-    Math.round(value * (servings / 2));
-
-  /* ---------- ACTIONS ---------- */
-//   const addIngredientsToGrocery = async () => {
-//   if (!selectedMeal) return;
-//   setAdding(true);
-
-//   try {
-//     // Send all ingredients in one go
-//     await api.post("/api/grocery/add-bulk", {
-//       items: selectedMeal.ingredients.map(ing => ({
-//         name: ing,
-//         quantity: "1",
-//         category: "Fresh Produce"
-//       }))
-//     });
-
-//     onNavigate("grocery");
-//   } catch (err) {
-//     console.error("Failed to add ingredients:", err);
-//   } finally {
-//     setAdding(false);
-//   }
-// };
-
-  /* ---------- LOADING ---------- */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500 bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
-        <div className="animate-pulse flex items-center gap-2">
-           <RefreshCw className="animate-spin w-5 h-5 text-[#16a34a]" />
-           Loading meals...
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+        <RefreshCw className="animate-spin w-8 h-8 text-emerald-500" />
       </div>
     );
   }
 
-  /* =========================================================
-      ===================== MEAL LIST =========================
-      ========================================================= */
+  /* ========================= GRID VIEW ========================= */
   if (!selectedMeal) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-6 transition-colors duration-500">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-8 transition-colors duration-500">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {meals.map((meal) => (
             <div
               key={meal._id}
               onClick={() => setSelectedMeal(meal)}
-              className="group bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-xl hover:border-[#16a34a] dark:hover:border-[#16a34a] cursor-pointer transition-all duration-300 overflow-hidden"
+              className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-gray-100 dark:border-slate-800 hover:shadow-xl transition cursor-pointer"
             >
-              <div className="overflow-hidden">
-                <img
-                  src={meal.image}
-                  alt={meal.name}
-                  className="h-56 w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-5">
-                <h3 className="text-xl text-gray-900 dark:text-slate-100 mb-1">{meal.name}</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
-                  {meal.calories} kcal • 30 mins
+              <img
+                src={meal.image}
+                className="h-56 w-full object-cover"
+                alt={meal.name}
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{meal.name}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {meal.calories} kcal • High Protein
                 </p>
               </div>
             </div>
@@ -130,139 +77,136 @@ export function MealFeedPage({ onNavigate }: MealFeedPageProps) {
     );
   }
 
-  /* =========================================================
-      ===================== MEAL DETAIL UI ====================
-      ========================================================= */
+  /* ========================= DETAIL VIEW ========================= */
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pb-20 transition-colors duration-500 font-sans">
       {/* Header */}
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
+      <header className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-gray-100 dark:border-slate-800 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <button
             onClick={() => setSelectedMeal(null)}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 transition-colors"
+            className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft size={18} /> Back to Discovery
           </button>
-          <h2 className="text-lg text-gray-900 dark:text-slate-100">Back to Feed</h2>
+          <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full font-bold">
+            AI Confidence: 92%
+          </span>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Hero */}
-        <div className="relative h-[450px] rounded-[2rem] overflow-hidden mb-8 shadow-2xl border border-white/10">
-          <img
-            src={selectedMeal.image}
-            alt={selectedMeal.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-          <div className="absolute bottom-0 p-10 text-white">
-            <h1 className="text-5xl font-light tracking-tight mb-6">{selectedMeal.name}</h1>
-            <div className="flex flex-wrap gap-6">
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                <Clock className="w-4 h-4 text-emerald-400" /> 30 mins
-              </span>
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                <Users className="w-4 h-4 text-emerald-400" /> {servings} servings
-              </span>
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                <ChefHat className="w-4 h-4 text-emerald-400" /> Easy
-              </span>
+      {/* HERO SPLIT */}
+      <section className="max-w-7xl mx-auto px-6 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+          {/* LEFT IMAGE */}
+          <div className="relative rounded-3xl overflow-hidden shadow-lg border border-transparent dark:border-slate-800">
+            <img
+              src={selectedMeal.image}
+              alt={selectedMeal.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* RIGHT ACTION PANEL */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-gray-100 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+            <div className="space-y-6">
+              <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100">{selectedMeal.name}</h1>
+
+              <div className="flex flex-wrap gap-3">
+                <Tag icon={Clock} text="30 mins" />
+                <Tag icon={ChefHat} text="Easy Prep" />
+                <Tag icon={Users} text="2 servings" />
+              </div>
+
+              {/* WHY ML */}
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20">
+                <p className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-3 tracking-widest">
+                  Recommended because
+                </p>
+                <ul className="text-sm space-y-2 text-slate-700 dark:text-slate-300 font-medium">
+                  <li className="flex items-center gap-2">✔ Matches {userProfile.dietPreference.join(", ")}</li>
+                  <li className="flex items-center gap-2">✔ Low sodium (BP friendly)</li>
+                  <li className="flex items-center gap-2">✔ High protein balance</li>
+                </ul>
+              </div>
+
+              {/* NUTRITION */}
+              <div className="grid grid-cols-2 gap-4">
+                <Nutrient icon={Zap} label="Calories" value={`${selectedMeal.calories} kcal`} />
+                <Nutrient icon={Beef} label="Protein" value={`${selectedMeal.protein} g`} />
+                <Nutrient icon={Wheat} label="Carbs" value={`${selectedMeal.carbs} g`} />
+                <Nutrient icon={Droplets} label="Fat" value={`${selectedMeal.fat} g`} />
+              </div>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="mt-10 flex gap-4">
+              <button
+                onClick={() => setIsSaved(!isSaved)}
+                className={`p-4 rounded-2xl border transition-all duration-300 ${
+                  isSaved
+                    ? "bg-rose-50 dark:bg-rose-950/30 text-rose-500 border-rose-200 dark:border-rose-900/50"
+                    : "bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-transparent"
+                }`}
+              >
+                <Heart fill={isSaved ? "currentColor" : "none"} className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={() => onNavigate("planner")}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+              >
+                Plan this meal
+              </button>
+
+              <button
+                onClick={() => onNavigate("grocery")}
+                className="p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl text-gray-600 dark:text-slate-300 border border-transparent dark:hover:border-slate-700 transition-all"
+              >
+                <ShoppingCart className="w-6 h-6" />
+              </button>
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Ingredients */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-slate-800 transition-all">
-            <h3 className="text-2xl text-gray-900 dark:text-slate-100 mb-6">Ingredients</h3>
-
-            <ul className="space-y-3">
-              {selectedMeal.ingredients.map((ingredient, i) => {
-                const alternatives = getAlternatives(ingredient);
-                const selected = selectedIngredient === ingredient;
-
-                return (
-                  <li key={i}>
-                    <div
-                      onClick={() =>
-                        alternatives.length &&
-                        setSelectedIngredient(selected ? null : ingredient)
-                      }
-                      className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-all duration-200 border ${
-                        selected 
-                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
-                        : 'hover:bg-gray-50 dark:hover:bg-slate-800 border-transparent'
-                      }`}
-                    >
-                      <span className="text-gray-700 dark:text-slate-300">{ingredient}</span>
-                      {alternatives.length > 0 && (
-                        <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${selected ? 'rotate-180 text-emerald-600' : 'text-emerald-500'}`} />
-                      )}
-                    </div>
-
-                    {selected && (
-                      <div className="ml-4 mt-2 p-4 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 animate-in slide-in-from-top-2 duration-300">
-                        <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider mb-3">Healthier Alternatives</p>
-                        <div className="flex flex-wrap gap-2">
-                          {alternatives.map((alt) => (
-                            <span
-                              key={alt}
-                              className="px-4 py-1.5 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-emerald-100 dark:border-emerald-800 shadow-sm rounded-full text-sm"
-                            >
-                              {alt}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Nutrition */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-slate-800 transition-all">
-              <h3 className="text-xl text-gray-900 dark:text-slate-100 mb-6">Nutrition Per Serving</h3>
-
-              <div className="space-y-4">
-                {[
-                  { label: "Calories", val: scaled(selectedMeal.calories), unit: "kcal", color: "text-[#16a34a]" },
-                  { label: "Protein", val: scaled(selectedMeal.protein), unit: "g", color: "text-blue-500" },
-                  { label: "Carbs", val: scaled(selectedMeal.carbs), unit: "g", color: "text-amber-500" },
-                  { label: "Fat", val: scaled(selectedMeal.fat), unit: "g", color: "text-rose-500" }
-                ].map((nutri) => (
-                  <div key={nutri.label} className="flex justify-between items-center pb-3 border-b border-gray-50 dark:border-slate-800 last:border-0">
-                    <span className="text-gray-600 dark:text-slate-400">{nutri.label}</span>
-                    <span className={`font-bold ${nutri.color}`}>{nutri.val}{nutri.unit}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 space-y-3">
-                <button
-                  onClick={() => onNavigate("planner")}
-                  className="w-full bg-[#16a34a] hover:bg-emerald-700 text-white py-4 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center font-semibold"
-                >
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Add to Planner
-                </button>
-
-                {/* <button
-                  onClick={addIngredientsToGrocery}
-                  disabled={adding}
-                  className="w-full border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-[#16a34a] hover:text-[#16a34a] py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center font-semibold disabled:opacity-50"
-                > */}
-                  {/* <ShoppingCart className="w-5 h-5 mr-2" />
-                  {adding ? "Adding..." : "Add to Grocery List"}
-                </button> */}
-              </div>
-            </div>
-          </div>
+      {/* FEEDBACK */}
+      <section className="max-w-4xl mx-auto px-6 mt-10 text-center">
+        <p className="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 mb-6 tracking-widest">
+          Improve Recommendations
+        </p>
+        <div className="flex justify-center gap-8">
+          <button className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all shadow-sm">
+            <ThumbsUp />
+          </button>
+          <button className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-all shadow-sm">
+            <ThumbsDown />
+          </button>
         </div>
+      </section>
+    </div>
+  );
+}
+
+/* ========================= HELPERS ========================= */
+
+function Tag({ icon: Icon, text }: any) {
+  return (
+    <span className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-full text-sm font-semibold text-slate-700 dark:text-slate-300">
+      <Icon size={16} className="text-emerald-500" /> {text}
+    </span>
+  );
+}
+
+function Nutrient({ icon: Icon, label, value }: any) {
+  return (
+    <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-transparent dark:border-slate-800/50 transition-colors">
+      <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+        <Icon size={18} className="text-emerald-500" />
+      </div>
+      <div>
+        <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-tight">{label}</p>
+        <p className="font-bold text-slate-900 dark:text-slate-100 tracking-tight">{value}</p>
       </div>
     </div>
   );

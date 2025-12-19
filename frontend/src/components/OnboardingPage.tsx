@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
-import type { UserProfile } from '../types/user';
 import Logo from '../assets/logo1.svg?react';
-
+import type { UserProfileInput } from "../types/user";
 
 type OnboardingPageProps = {
-    onComplete: (profile: UserProfile) => void;
-    onBack: () => void;   // 🔥 NEW
-  };
+  onComplete: (profile: UserProfileInput) => void;
+  onBack: () => void;
+  isLoggedIn?: boolean; // Pass this from your Auth state
+};
 
 const medicalConditionsOptions = [
   'Migraine','Hypertension', 'Diabetes Type 2', 'High Cholesterol', 'Heart Disease',
@@ -30,7 +30,7 @@ const tastePreferencesOptions = [
   'Sweet', 'Savory', 'Spicy', 'Mild', 'Tangy', 'Rich & Creamy', 'Light & Fresh'
 ];
 
-export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
+export function OnboardingPage({ onComplete, onBack, isLoggedIn }: OnboardingPageProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -44,6 +44,21 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
   });
 
   const totalSteps = 5;
+
+  // 🔥 FUNCTIONAL SKIP: Sends current form data to redirect to dashboard
+  const handleSkipSetup = () => {
+    onComplete({
+      name: formData.name || 'User',
+      email: formData.email,
+      age: parseInt(formData.age) || 0,
+      dietPreference: formData.dietPreference,
+      allergies: formData.allergies,
+      medicalConditions: formData.medicalConditions,
+      budget: formData.budget,
+      tastePreferences: formData.tastePreferences,
+      onboardingCompleted: false, // Mark onboarding as incomplete
+    });
+  };
 
   const handleNext = () => {
     if (step < totalSteps) {
@@ -62,14 +77,15 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
     }
   };
 
+  // 🔥 FUNCTIONAL BACK: Redirects based on auth status if on step 1
   const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
+    if (step === 1) {
+      onBack(); // Logic for Landing vs Dashboard happens in the parent calling this
     } else {
-      onBack(); // ⬅️ go back to Landing page
+      setStep((prev) => prev - 1);
     }
   };
-  
+
   const toggleArrayItem = (array: string[], item: string) => {
     if (array.includes(item)) {
       return array.filter(i => i !== item);
@@ -102,11 +118,11 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
         <div className="flex items-center gap-2 mb-8">
           <Logo className="w-8 h-8 text-green-600" />
           <span className="text-3xl font-semibold tracking-tight">
-  <span className="text-green-600">Diet</span>
-  <span className="bg-gradient-to-r from-green-500 to-emerald-400 bg-clip-text text-transparent">
-    Sync
-  </span>
-</span>
+            <span className="text-green-600">Diet</span>
+            <span className="bg-gradient-to-r from-green-500 to-emerald-400 bg-clip-text text-transparent">
+              Sync
+            </span>
+          </span>
         </div>
 
         {/* Progress Bar */}
@@ -122,74 +138,33 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
             />
           </div>
         </div>
-        <div className="flex justify-end mb-4">
-  {/* <button
-    onClick={() =>
-      onComplete({
-        name: '',
-        email: '',
-        age: 0,
-        dietPreference: [],
-        allergies: [],
-        medicalConditions: [],
-        budget: '',
-        tastePreferences: [],
-      })
-    }
-    className="text-sm text-gray-500 hover:text-green-600 font-medium transition"
-  >
-    Skip for now →
-  </button> */}
-</div>
 
         {/* Main Card */}
         <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12">
-        <div className="flex items-start justify-between mb-6">
-  <div>
-    <h2 className="text-3xl mb-2">Tell us about yourself</h2>
-    <p className="text-gray-600">
-      Help us personalize your meal recommendations
-    </p>
-  </div>
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-3xl mb-2">Tell us about yourself</h2>
+              <p className="text-gray-600">
+                Help us personalize your meal recommendations
+              </p>
+            </div>
 
-  {/* 🔥 BIG & VISIBLE SKIP */}
-  <button
-    onClick={() =>
-      onComplete({
-        name: '',
-        email: '',
-        age: 0,
-        dietPreference: [],
-        allergies: [],
-        medicalConditions: [],
-        budget: '',
-        tastePreferences: [],
-      })
-    }
-    className="
-      px-5 py-2.5
-      rounded-full
-      border-2 border-green-600
-      text-green-700
-      font-semibold
-      hover:bg-green-50
-      transition
-      text-sm
-      whitespace-nowrap
-    "
-  >
-    Skip setup →
-  </button>
-</div>
+            {/* 🔥 SKIP SETUP BUTTON IS NOW FUNCTIONAL */}
+            <button
+              onClick={handleSkipSetup}
+              className="px-5 py-2.5 rounded-full border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition text-sm"
+            >
+              Skip setup →
+            </button>
+          </div>
 
-
-<div className="mt-4 mb-8 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
-  <strong>Why we ask this:</strong>
-  <p className="mt-1">
-    Your preferences help us create personalized meal plans, calorie goals,
-    and health-aware food recommendations. You can always update this later.
-  </p>
-</div>
+          <div className="mt-4 mb-8 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+            <strong>Why we ask this:</strong>
+            <p className="mt-1">
+              Your preferences help us create personalized meal plans, calorie goals,
+              and health-aware food recommendations. You can always update this later.
+            </p>
+          </div>
 
           {/* Step 1: Basic Info */}
           {step === 1 && (
@@ -217,7 +192,7 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
             </div>
           )}
 
-          {/* Step 2: Diet Preference (MULTI SELECT FIXED) */}
+          {/* Step 2: Diet Preference */}
           {step === 2 && (
             <div>
               <label className="block text-sm mb-4 text-gray-700">
@@ -230,10 +205,7 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
                     onClick={() =>
                       setFormData({
                         ...formData,
-                        dietPreference: toggleArrayItem(
-                          formData.dietPreference,
-                          option
-                        ),
+                        dietPreference: toggleArrayItem(formData.dietPreference, option),
                       })
                     }
                     className={`px-4 py-3 rounded-lg border-2 transition-all ${
@@ -248,7 +220,6 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
               </div>
             </div>
           )}
-
 
           {/* Step 3: Allergies */}
           {step === 3 && (
@@ -347,34 +318,30 @@ export function OnboardingPage({ onComplete, onBack }: OnboardingPageProps) {
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between mt-12">
+            <div className="flex items-center gap-4">
+              {/* 🔥 BACK BUTTON IS NOW FUNCTIONAL */}
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                Back
+              </button>
+            </div>
 
-  {/* LEFT SIDE: Back + Skip */}
-  <div className="flex items-center gap-4">
-    <button
-      onClick={handleBack}
-      className="flex items-center gap-2 px-6 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all"
-    >
-      <ChevronLeft className="w-5 h-5" />
-      Back
-    </button>
-
-  </div>
-
-  {/* RIGHT SIDE: NEXT */}
-  <button
-    onClick={handleNext}
-    disabled={!canProceed()}
-    className={`flex items-center gap-2 px-8 py-3 rounded-lg transition-all ${
-      canProceed()
-        ? 'bg-green-600 text-white hover:bg-green-700'
-        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-    }`}
-  >
-    {step === totalSteps ? 'Complete' : 'Next'}
-    <ChevronRight className="w-5 h-5" />
-  </button>
-</div>
-
+            <button
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className={`flex items-center gap-2 px-8 py-3 rounded-lg transition-all ${
+                canProceed()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {step === totalSteps ? 'Complete' : 'Next'}
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

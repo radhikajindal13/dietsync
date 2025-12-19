@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import { LandingPage } from "./components/LandingPage";
 import { OnboardingPage } from "./components/OnboardingPage";
 import { HomePage } from "./components/HomePage";
@@ -19,40 +18,38 @@ import type { Page } from "./types/navigation";
 import type { UserProfile } from "./types/user";
 
 export default function App() {
-  /* ---------------- Page Stack ---------------- */
   const [pageStack, setPageStack] = useState<Page[]>(["landing"]);
   const currentPage = pageStack[pageStack.length - 1];
 
-  /* ---------------- State ---------------- */
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  /* ---------------- Theme ---------------- */
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const toggleTheme = () =>
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  /* ---------------- Navigation helpers ---------------- */
   const goTo = (page: Page) => {
-    setPageStack((prev) =>
-      prev[prev.length - 1] === page ? prev : [...prev, page]
-    );
+    // 🔥 STRICT GATEKEEPER: Force onboarding if profile is incomplete
+    const restrictedPages: Page[] = ["planner", "grocery", "home", "mealfeed"];
+    if (userProfile && !userProfile.onboardingCompleted && restrictedPages.includes(page)) {
+      setPageStack(["onboarding"]);
+      return;
+    }
+    setPageStack((prev) => (prev[prev.length - 1] === page ? prev : [...prev, page]));
   };
 
-  const goBack = () => {
-    setPageStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
-  };
+  const goBack = () => setPageStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
 
-  /* ---------------- Fetch Profile ---------------- */
   const fetchUserProfile = async () => {
     setLoadingProfile(true);
     try {
       const res = await api.get("/api/profile");
       setUserProfile(res.data);
-
-      // ✅ After login / refresh → Dashboard
-      setPageStack(["dashboard"]);
+      if (res.data.onboardingCompleted) {
+        setPageStack(["dashboard"]);
+      } else {
+        setPageStack(["onboarding"]);
+      }
     } catch (err: any) {
       if (err.response?.status === 404) {
         setPageStack(["onboarding"]);
@@ -65,11 +62,9 @@ export default function App() {
     }
   };
 
-  /* ---------------- OAuth Sync ---------------- */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token") || localStorage.getItem("token");
-
     if (token) {
       localStorage.setItem("token", token);
       window.history.replaceState({}, "", "/");
@@ -77,7 +72,6 @@ export default function App() {
     }
   }, []);
 
-  /* ---------------- Logout ---------------- */
   const handleLogout = () => {
     localStorage.removeItem("token");
     delete api.defaults.headers.common["Authorization"];
@@ -85,25 +79,20 @@ export default function App() {
     setPageStack(["landing"]);
   };
 
-  /* ---------------- Sidebar visible pages ---------------- */
-  const dashboardPages: Page[] = [
-    "dashboard",
-    "home",
-    "mealfeed",
-    "planner",
-    "grocery",
-    "profile",
-  ];
+  const dashboardPages: Page[] = ["dashboard", "home", "mealfeed", "planner", "grocery", "profile"];
+  const showSidebar = userProfile && dashboardPages.includes(currentPage);
 
   return (
     <div className={theme === "dark" ? "dark" : ""}>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        {/* ---------------- Sidebar ---------------- */}
-        {userProfile && dashboardPages.includes(currentPage) && (
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        
+        {/* Sidebar */}
+        {showSidebar && (
           <Sidebar
             currentPage={currentPage}
             onNavigate={goTo}
             onLogout={handleLogout}
+            onboardingCompleted={userProfile.onboardingCompleted}
             theme={theme}
             toggleTheme={toggleTheme}
             user={{
@@ -114,124 +103,49 @@ export default function App() {
           />
         )}
 
-        {/* ---------------- Main ---------------- */}
-        <main className="flex-1 overflow-y-auto">
-          {/* Landing */}
-          {currentPage === "landing" && (
-            <LandingPage
-              onLogin={() => goTo("login")}
-              onSignup={() => goTo("signup")}
-              theme={theme}
-              toggleTheme={toggleTheme}
-            />
-          )}
+        {/* 🔥 MAIN CONTENT: Added transition and padding-left to offset sidebar */}
+        <main 
+          className={`flex-1 h-screen overflow-y-auto transition-all duration-500 ease-in-out ${
+            showSidebar ? "pl-20" : "pl-0"
+          }`}
+        >
+          <div className="w-full min-h-full">
+            {currentPage === "landing" && (
+              <LandingPage onLogin={() => goTo("login")} onSignup={() => goTo("signup")} theme={theme} toggleTheme={toggleTheme} />
+            )}
 
-          {/* Login */}
-          {currentPage === "login" && (
-            <LoginPage
-              onGoogleLogin={() =>
-                (window.location.href = "http://localhost:5050/auth/google")
-              }
-              onLoginSuccess={fetchUserProfile}
-              onGoToSignup={() => goTo("signup")}
-              onBackToHome={() => goTo("landing")}
-            />
-          )}
+            {currentPage === "login" && (
+              <LoginPage onGoogleLogin={() => (window.location.href = "http://localhost:5050/auth/google")} onLoginSuccess={fetchUserProfile} onGoToSignup={() => goTo("signup")} onBackToHome={() => goTo("landing")} />
+            )}
 
-          {/* Signup */}
-          {currentPage === "signup" && (
-            <SignupPage
-              onGoogleSignup={() =>
-                (window.location.href = "http://localhost:5050/auth/google")
-              }
-              onSignupSuccess={() => setPageStack(["onboarding"])}
-              onGoToLogin={() => goTo("login")}
-              onBackToHome={() => goTo("landing")}
-            />
-          )}
+            {currentPage === "signup" && (
+              <SignupPage onGoogleSignup={() => (window.location.href = "http://localhost:5050/auth/google")} onSignupSuccess={() => setPageStack(["onboarding"])} onGoToLogin={() => goTo("login")} onBackToHome={() => goTo("landing")} />
+            )}
 
-          {/* Onboarding */}
-          {currentPage === "onboarding" && (
-            <OnboardingPage
-              onComplete={fetchUserProfile}
-              onBack={goBack}
-            />
-          )}
+            {currentPage === "onboarding" && (
+              <OnboardingPage isLoggedIn={!!userProfile} onComplete={async (p) => { try { await api.post("/api/profile", p); fetchUserProfile(); } catch (e) { console.error(e); } }} onBack={() => userProfile ? setPageStack(["dashboard"]) : setPageStack(["landing"])} />
+            )}
 
-          {/* Dashboard */}
-          {currentPage === "dashboard" && userProfile && (
-            <DashboardPage
-              userName={userProfile.name}
-              onNavigate={goTo}
-            />
-          )}
+            {currentPage === "dashboard" && userProfile && (
+              <DashboardPage userName={userProfile.name} onboardingCompleted={userProfile.onboardingCompleted} onNavigate={goTo} />
+            )}
 
-          {/* Home (separate page) */}
-          {currentPage === "home" && userProfile && (
-            <HomePage
-              userName={userProfile.name}
-              dietPreference={userProfile.dietPreference}
-              medicalConditions={userProfile.medicalConditions}
-              budget={userProfile.budget}
-              onNavigate={(page) => {
-                if (page === "feedback") {
-                  setShowFeedback(true);
-                } else {
-                  const map = {
-                    mealFeed: "mealfeed",
-                    weeklyPlanner: "planner",
-                    groceryList: "grocery",
-                  } as const;
-                  goTo(map[page]);
-                }
-              }}
-            />
-          )}
+            {currentPage === "home" && userProfile && (
+              <HomePage userName={userProfile.name} dietPreference={userProfile.dietPreference} medicalConditions={userProfile.medicalConditions} budget={userProfile.budget} onNavigate={(p) => p === "feedback" ? setShowFeedback(true) : goTo(p === "mealFeed" ? "mealfeed" : p === "weeklyPlanner" ? "planner" : "grocery")} />
+            )}
 
-          {/* Meal Feed */}
-          {currentPage === "mealfeed" && userProfile && (
-            <MealFeedPage
-              userProfile={userProfile}
-              theme={theme}
-              toggleTheme={toggleTheme}
-              onOpenFeedback={() => setShowFeedback(true)}
-            />
-          )}
+            {currentPage === "mealfeed" && userProfile && (
+              <MealFeedPage userProfile={userProfile} theme={theme} toggleTheme={toggleTheme} onOpenFeedback={() => setShowFeedback(true)} onNavigate={goTo} />
+            )}
 
-          {/* Planner */}
-          {currentPage === "planner" && userProfile && (
-            <WeeklyPlannerPage
-              userProfile={userProfile}
-              onNavigate={goTo}
-            />
-          )}
-
-          {/* Grocery */}
-          {currentPage === "grocery" && userProfile && (
-            <GroceryListPage
-              userProfile={userProfile}
-              onNavigate={goTo}
-            />
-          )}
-
-          {/* Profile */}
-          {currentPage === "profile" && userProfile && (
-            <ProfileSettingsPage
-              userProfile={userProfile}
-              onSave={setUserProfile}
-              onBack={goBack}
-            />
-          )}
+            {currentPage === "planner" && userProfile && <WeeklyPlannerPage userProfile={userProfile} onNavigate={goTo} />}
+            {currentPage === "grocery" && userProfile && <GroceryListPage userProfile={userProfile} onNavigate={goTo} />}
+            {currentPage === "profile" && userProfile && <ProfileSettingsPage userProfile={userProfile} onSave={setUserProfile} onBack={goBack} />}
+          </div>
         </main>
       </div>
 
-      {/* ---------------- Feedback Modal ---------------- */}
-      {showFeedback && (
-        <FeedbackModel
-          open={showFeedback}
-          onClose={() => setShowFeedback(false)}
-        />
-      )}
+      {showFeedback && <FeedbackModel open={showFeedback} onClose={() => setShowFeedback(false)} />}
     </div>
   );
 }

@@ -160,14 +160,14 @@ const autoGenerateWeek = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Tabs */}
-        <div className="flex gap-4 mb-8">
+        {/* <div className="flex gap-4 mb-8">
           <button onClick={() => onNavigate("mealfeed")}>Meal Feed</button>
           
           <button className="bg-green-600 text-white px-4 py-2 rounded-lg">
             Weekly Planner
           </button>
           <button onClick={() => onNavigate("grocery")}>Grocery</button>
-        </div>
+        </div> */}
 
         {/* Planner */}
         <div className="overflow-x-auto rounded-2xl bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700">
