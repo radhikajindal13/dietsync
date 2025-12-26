@@ -41,7 +41,7 @@ const daysOfWeek = [
   "Sunday",
 ];
 
-export function WeeklyPlannerPage({ userProfile, onNavigate }: WeeklyPlannerPageProps) {
+export function WeeklyPlannerPage(_: WeeklyPlannerPageProps) {
   const [allMeals, setAllMeals] = useState<Meal[]>([]);
   const [loadingMeals, setLoadingMeals] = useState(true);
 

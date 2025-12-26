@@ -42,10 +42,8 @@ const categories = [
 
 /* ================= COMPONENT ================= */
 
-export function GroceryListPage({
-  userProfile,
-  onNavigate,
-}: GroceryListPageProps) {
+export function GroceryListPage(
+  _: GroceryListPageProps) {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");

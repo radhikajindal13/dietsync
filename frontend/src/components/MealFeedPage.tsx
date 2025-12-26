@@ -22,8 +22,12 @@ import type { UserProfile } from "../types/user";
 
 type MealFeedPageProps = {
   userProfile: UserProfile;
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+  onOpenFeedback: () => void;
   onNavigate: (page: "planner" | "grocery") => void;
 };
+
 
 export function MealFeedPage({ userProfile, onNavigate }: MealFeedPageProps) {
   const [meals, setMeals] = useState<Meal[]>([]);
