@@ -1,5 +1,3 @@
-// import { useEffect } from 'react';
-// import { useNavigate } from 'react-router-dom';
 import {
   Leaf,
   Clock,
@@ -10,22 +8,14 @@ import {
   Sparkles,
   Sun,
   Moon,
-  TrendingUp,   // ✅ ADD THIS
-  // GithubIcon,
-  // LinkedinIcon,
-  // Instagram,
+  TrendingUp,
 } from 'lucide-react';
 import Logo from '../assets/logo1.svg?react';
-
-
 
 import { icons } from "lucide-react";
 const Github = icons.Github;
 const Linkedin = icons.Linkedin;
 const Instagram = icons.Instagram;
-// const Youtube = icons.Youtube;
-
-
 
 type LandingPageProps = {
   onLogin: () => void;
@@ -34,8 +24,6 @@ type LandingPageProps = {
   toggleTheme: () => void;
 };
 
-
-
 export function LandingPage({
   onLogin,
   onSignup,
@@ -43,18 +31,9 @@ export function LandingPage({
   toggleTheme,
 }: LandingPageProps) {
 
-  // const navigate = useNavigate();
-
-  // 🔐 If already logged in, redirect to mealfeed
-  // useEffect(() => {
-  //   const token = localStorage.getItem('token');
-  //   if (token) {
-  //     navigate('/mealfeed');
-  //   }
-  // }, [navigate]);
-
   const handleGoogleLogin = () => {
-    window.location.href = "https://dietsync.onrender.com/auth/google";
+    // window.location.href = "https://dietsync.onrender.com/auth/google";
+    window.location.href = "http://localhost:5000/auth/google";
   };
   
 

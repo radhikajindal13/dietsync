@@ -26,7 +26,7 @@ connectDB();
 
 const allowedOrigins = [
   "http://localhost:5173",          // local dev
-  "https://dietsync.vercel.app",    // 🔴 CHANGE to your actual frontend URL
+  // "https://dietsync.vercel.app",    // 🔴 CHANGE to your actual frontend URL
 ];
 
 app.set("trust proxy", 1); 
